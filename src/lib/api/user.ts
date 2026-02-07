@@ -38,6 +38,31 @@ export interface UpdateUserRequest {
   active?: boolean;
 }
 
+export interface Profile {
+  active: boolean;
+  name: string;
+  nationalId: string;
+  salary: number | null;
+  role: string;
+  email: string;
+  phoneNumber: string | null;
+}
+
+export interface ProfileResponse {
+  success: boolean;
+  message: string;
+  profile: Profile;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  nationalId?: string;
+  oldPassword?: string;
+  password?: string;
+}
+
 export const userApi = {
   getAll: async (): Promise<UsersResponse> => {
     const response = await api.get("/user/users");
@@ -74,6 +99,19 @@ export const userApi = {
     const response = await api.put(`/user/update/status/${id}`, {
       data: { status: true },
     });
+    return response.data;
+  },
+
+  getProfile: async (): Promise<ProfileResponse> => {
+    const response = await api.get("/user/profile");
+    return response.data;
+  },
+
+  updateProfile: async (
+    id: string,
+    data: UpdateProfileRequest,
+  ): Promise<{ message: string; user: User }> => {
+    const response = await api.put(`/user/update/${id}`, data);
     return response.data;
   },
 };

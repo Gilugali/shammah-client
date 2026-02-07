@@ -5,8 +5,13 @@ import { formatRWF } from "@/lib/utils/currency";
 import { toast } from "sonner";
 import { Pagination } from "@/components/shared/Pagination";
 import FilterBar, { type DateRangeFilter } from "@/components/shared/FilterBar";
+import { useAuth } from "@/context/AuthContext";
+import { canEdit, isowner } from "@/lib/types/role";
+import { SummaryCards } from "@/components/shared/SummaryCards";
 
 const Transactions = () => {
+  const { user } = useAuth();
+  const userCanEdit = canEdit(user?.role);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,6 +165,139 @@ const Transactions = () => {
     setPage(1);
   };
 
+  // Calculate summary statistics for owners
+  const summaryStats = useMemo(() => {
+    if (!user?.role || !isowner(user.role)) return null;
+
+    const totalTransactions = allTransactions.length;
+    const totalRevenue = allTransactions.reduce(
+      (sum, t) => sum + Number(t.patientPaidAmount || 0),
+      0
+    );
+
+    // Today's transactions
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayTransactions = allTransactions.filter((t) => {
+      const transactionDate = new Date(t.createdAt);
+      return transactionDate >= today;
+    });
+
+    // This month's transactions
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const thisMonthTransactions = allTransactions.filter((t) => {
+      const transactionDate = new Date(t.createdAt);
+      return (
+        transactionDate.getMonth() === currentMonth &&
+        transactionDate.getFullYear() === currentYear
+      );
+    });
+
+    const todayRevenue = todayTransactions.reduce(
+      (sum, t) => sum + Number(t.patientPaidAmount || 0),
+      0
+    );
+    const thisMonthRevenue = thisMonthTransactions.reduce(
+      (sum, t) => sum + Number(t.patientPaidAmount || 0),
+      0
+    );
+
+    return {
+      totalTransactions,
+      totalRevenue,
+      todayCount: todayTransactions.length,
+      todayRevenue,
+      thisMonthCount: thisMonthTransactions.length,
+      thisMonthRevenue,
+    };
+  }, [allTransactions, user?.role]);
+
+  const summaryCards = summaryStats
+    ? [
+        {
+          title: "Total Transactions",
+          value: summaryStats.totalTransactions,
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          ),
+          color: "text-blue-600",
+        },
+        {
+          title: "Total Revenue",
+          value: formatRWF(summaryStats.totalRevenue),
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ),
+          color: "text-green-600",
+        },
+        {
+          title: "Today's Transactions",
+          value: summaryStats.todayCount,
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          ),
+          color: "text-purple-600",
+        },
+        {
+          title: "Today's Revenue",
+          value: formatRWF(summaryStats.todayRevenue),
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+              />
+            </svg>
+          ),
+          color: "text-teal-600",
+        },
+      ]
+    : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -169,26 +307,33 @@ const Transactions = () => {
             View and manage all transactions
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-        >
-          <svg
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            className="w-5 h-5"
+        {userCanEdit && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Add Transaction
-        </button>
+            <svg
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Add Transaction
+          </button>
+        )}
       </div>
+
+      {/* Summary Cards for Owners */}
+      {user?.role && isowner(user.role) && (
+        <SummaryCards cards={summaryCards} isLoading={isLoading} />
+      )}
 
       {/* Search Bar */}
       <div className="relative max-w-md">
@@ -273,12 +418,14 @@ const Transactions = () => {
         ) : filteredTransactions.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <p className="mb-2">No transactions found</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="text-teal-600 hover:text-teal-700 font-medium"
-            >
-              Add your first transaction
-            </button>
+            {userCanEdit && (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="text-teal-600 hover:text-teal-700 font-medium"
+              >
+                Add your first transaction
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

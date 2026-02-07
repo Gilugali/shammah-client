@@ -14,6 +14,12 @@ export const isowner = (role: UserRole | string): boolean => role === "owner";
 export const isInvestor = (role: UserRole | string): boolean =>
   role === "investor";
 
+// Helper to check if user can edit (owners are read-only)
+export const canEdit = (role: UserRole | string | undefined | null): boolean => {
+  if (!role) return false;
+  return role.toLowerCase() !== "owner";
+};
+
 
 
 

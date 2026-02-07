@@ -13,6 +13,10 @@ export interface Patient {
     id: string;
     name: string;
   } | null;
+  createdBy?: {
+    id: string;
+    name: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

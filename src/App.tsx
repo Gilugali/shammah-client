@@ -16,6 +16,7 @@ import FinancialOverview from "@/_root/pages/FinancialOverview";
 import CashIn from "@/_root/pages/CashIn";
 import Reports from "@/_root/pages/Reports";
 import Developer from "@/_root/pages/Developer";
+import Profile from "@/_root/pages/Profile";
 import { RoleGuard } from "@/components/RoleGuard";
 
 function App() {
@@ -135,6 +136,16 @@ function App() {
 
             {/* Common routes */}
             <Route path="/developer" element={<Developer />} />
+            <Route
+              path="/profile"
+              element={
+                <RoleGuard
+                  allowedRoles={["admin", "owner", "receptionist", "investor"]}
+                >
+                  <Profile />
+                </RoleGuard>
+              }
+            />
             <Route
               path="/appointments"
               element={<div>Appointments (Coming Soon)</div>}

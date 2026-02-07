@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import PatientModal from "@/components/PatientModal";
 import TransactionModal from "@/components/TransactionModal";
 import { Pagination } from "@/components/shared/Pagination";
+import { canEdit } from "@/lib/types/role";
 import {
   BarChart,
   Bar,
@@ -51,6 +52,7 @@ const CHART_COLORS = [
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const userCanEdit = canEdit(user?.role);
   const now = new Date();
   const [totalPatients, setTotalPatients] = useState(0);
   const [todayTransactions, setTodayTransactions] = useState<any>(null);
@@ -99,7 +101,9 @@ const Dashboard = () => {
 
           setDashboardData({
             paidToday: isNaN(paidToday) ? 0 : paidToday,
-            insuranceExpectedAmount: isNaN(insuranceExpectedAmount) ? 0 : insuranceExpectedAmount,
+            insuranceExpectedAmount: isNaN(insuranceExpectedAmount)
+              ? 0
+              : insuranceExpectedAmount,
             transactionCount: dashboardResponse.data.patients || 0,
           });
         }
@@ -171,7 +175,9 @@ const Dashboard = () => {
 
         setDashboardData({
           paidToday: isNaN(paidToday) ? 0 : paidToday,
-          insuranceExpectedAmount: isNaN(insuranceExpectedAmount) ? 0 : insuranceExpectedAmount,
+          insuranceExpectedAmount: isNaN(insuranceExpectedAmount)
+            ? 0
+            : insuranceExpectedAmount,
           transactionCount: dashboardResponse.data.patients || 0,
         });
       }
@@ -384,44 +390,48 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={() => setIsPatientModalOpen(true)}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-          >
-            <svg
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Patient
-          </button>
-          <button
-            onClick={() => setIsTransactionModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-          >
-            <svg
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Transaction
-          </button>
+          {userCanEdit && (
+            <>
+              <button
+                onClick={() => setIsPatientModalOpen(true)}
+                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+              >
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add Patient
+              </button>
+              <button
+                onClick={() => setIsTransactionModalOpen(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+              >
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add Transaction
+              </button>
+            </>
+          )}
           <button
             onClick={handleDownloadPdf}
             disabled={isDownloadingPdf}
@@ -512,13 +522,16 @@ const Dashboard = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Insurance
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Amount
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Time
+                          Payment Method
                         </th>
                       </tr>
                     </thead>
@@ -534,6 +547,12 @@ const Dashboard = () => {
                             className="hover:bg-gray-50"
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-2 py-1 text-xs font-large  text-black">
+                                {`${transaction.patient.firstName} ${transaction.patient.lastName}`}
+                              </span>
+                            </td>
+
+                            <td className="px-6 py-4 whitespace-nowrap">
                               <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
                                 {transaction.patient?.insurance?.name || "N/A"}
                               </span>
@@ -544,15 +563,10 @@ const Dashboard = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-500">
-                                {transaction.createdAt
-                                  ? new Date(
-                                      transaction.createdAt,
-                                    ).toLocaleTimeString("en-US", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })
-                                  : "N/A"}
+                              <div className="text-sm text-gray-500 ">
+                                <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                  {transaction.paymentMethod}
+                                </span>
                               </div>
                             </td>
                           </tr>

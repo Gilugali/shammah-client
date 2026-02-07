@@ -5,8 +5,12 @@ import { toast } from "sonner";
 import PatientModal from "@/components/PatientModal";
 import { Pagination } from "@/components/shared/Pagination";
 import FilterBar, { type DateRangeFilter } from "@/components/shared/FilterBar";
+import { useAuth } from "@/context/AuthContext";
+import { canEdit, isowner } from "@/lib/types/role";
+import { SummaryCards } from "@/components/shared/SummaryCards";
 
 const Patients = () => {
+  const { user } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [allPatients, setAllPatients] = useState<Patient[]>([]);
   const [insurances, setInsurances] = useState<Insurance[]>([]);
@@ -19,6 +23,8 @@ const Patients = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [insuranceFilter, setInsuranceFilter] = useState<string>("");
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>({});
+  
+  const userCanEdit = canEdit(user?.role);
 
   const fetchPatients = async () => {
     try {
@@ -170,6 +176,96 @@ const Patients = () => {
     fetchPatients();
   };
 
+  // Calculate summary statistics for owners
+  const summaryStats = useMemo(() => {
+    if (!user?.role || !isowner(user.role)) return null;
+
+    const totalPatients = allPatients.length;
+    
+    // With Insurance = all insurances EXCEPT private
+    const patientsWithInsurance = allPatients.filter((p) => {
+      if (!p.insurance || !p.insurance.name) return false;
+      return p.insurance.name.toLowerCase() !== "private";
+    }).length;
+    
+    // Without Insurance = patients with private insurance
+    const patientsWithPrivate = allPatients.filter((p) => {
+      if (!p.insurance || !p.insurance.name) return false;
+      return p.insurance.name.toLowerCase() === "private";
+    }).length;
+
+    return {
+      totalPatients,
+      patientsWithInsurance,
+      patientsWithPrivate,
+    };
+  }, [allPatients, user?.role]);
+
+  const summaryCards = summaryStats
+    ? [
+        {
+          title: "Total Patients",
+          value: summaryStats.totalPatients,
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+          ),
+          color: "text-blue-600",
+        },
+        {
+          title: "With Insurance",
+          value: summaryStats.patientsWithInsurance,
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+          ),
+          color: "text-green-600",
+        },
+        {
+          title: "Private Insurance",
+          value: summaryStats.patientsWithPrivate,
+          icon: (
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          ),
+          color: "text-yellow-600",
+        },
+      ]
+    : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -179,26 +275,33 @@ const Patients = () => {
             Manage patient information
           </p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-        >
-          <svg
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            className="w-5 h-5"
+        {userCanEdit && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Add Patient
-        </button>
+            <svg
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Add Patient
+          </button>
+        )}
       </div>
+
+      {/* Summary Cards for Owners */}
+      {user?.role && isowner(user.role) && (
+        <SummaryCards cards={summaryCards} isLoading={isLoading} />
+      )}
 
       {/* Search Bar */}
       <div className="relative max-w-md">
@@ -313,6 +416,9 @@ const Patients = () => {
                     Date of Birth
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created By
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -353,26 +459,36 @@ const Patients = () => {
                           : "N/A"}
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {patient.createdBy?.name || "N/A"}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm  font-medium">
-                      <button
-                        onClick={() => handleOpenModal(patient)}
-                        className="text-teal-600 hover:text-teal-900 mr-4 p-1 rounded hover:bg-teal-50 transition-colors"
-                        title="Edit patient"
-                      >
-                        <svg
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          className="w-5 h-4"
+                      {userCanEdit && (
+                        <button
+                          onClick={() => handleOpenModal(patient)}
+                          className="text-teal-600 hover:text-teal-900 mr-4 p-1 rounded hover:bg-teal-50 transition-colors"
+                          title="Edit patient"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </button>
+                          <svg
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            className="w-5 h-4"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                      {!userCanEdit && (
+                        <span className="text-gray-400 text-xs">Read-only</span>
+                      )}
                       {/* <button className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors" title="Delete patient">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-4 h-4">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
