@@ -2,9 +2,10 @@ import api from "../api";
 
 export interface Transaction {
   id: string;
-  amount: number;
-  coverage: number;
-  totalPayable: number;
+  patientPaidAmount: number;
+  insuranceExpectedAmount: number;
+  totalBilledAmount: number;
+  insurancePaidAmount?: number | null;
   description: string | null;
   paymentMethod: string;
   reportedBy: {
@@ -23,6 +24,7 @@ export interface CreateTransactionRequest {
   paymentMethod: string;
   description?: string;
   patientId: string;
+  actualPaid?: number;
 }
 
 export interface CreateTransactionResponse {
@@ -52,8 +54,8 @@ export interface TodayTransactionsResponse {
   message: string;
   data: {
     transactions: Array<{
-      amount: number;
-      coverage: number;
+      patientPaidAmount: number;
+      insuranceExpectedAmount: number;
       description: string | null;
       patient: {
         phoneNumber: string | null;
@@ -79,10 +81,10 @@ export interface TodayTransactionsResponse {
 export interface MonthlyReportTransaction {
   id: string;
   insuranceId: string | null;
-  coverage: number;
-  amount: number;
-  totalPayable: number;
-  actualPaid: number | null;
+  insuranceExpectedAmount: number;
+  patientPaidAmount: number;
+  totalBilledAmount: number;
+  insurancePaidAmount: number | null;
   createdAt: string;
   [key: string]: unknown;
 }
@@ -146,10 +148,10 @@ export const transactionApi = {
 
   updateActualPaid: async (
     transactionId: string,
-    actualPaid: number,
+    insurancePaidAmount: number,
   ): Promise<{ success: boolean; message: string; transaction: any }> => {
     const response = await api.put(`/transactions/insurance-paid/${transactionId}`, {
-      actualPaid,
+      insurancePaidAmount,
     });
     return response.data;
   },

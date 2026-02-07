@@ -51,7 +51,7 @@ const ExpenseModal = ({ isOpen, onClose, onSuccess }: ExpenseModalProps) => {
       await expenseApi.create({
         name: formData.name,
         date: formData.date,
-        amount,
+        amount: amount,
         type: formData.type,
       } as CreateExpenseRequest);
       toast.success("Expense added successfully");

@@ -57,7 +57,7 @@ const Dashboard = () => {
   const [todayTransactionsList, setTodayTransactionsList] = useState<any[]>([]);
   const [dashboardData, setDashboardData] = useState<{
     paidToday: number;
-    coverage: number;
+    insuranceExpectedAmount: number;
     transactionCount: number;
   } | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -92,14 +92,14 @@ const Dashboard = () => {
             typeof dashboardResponse.data.paidToday === "string"
               ? parseFloat(dashboardResponse.data.paidToday)
               : dashboardResponse.data.paidToday || 0;
-          const coverage =
-            typeof dashboardResponse.data.coverage === "string"
-              ? parseFloat(dashboardResponse.data.coverage)
-              : dashboardResponse.data.coverage || 0;
+          const insuranceExpectedAmount =
+            typeof dashboardResponse.data.insuranceExpectedAmount === "string"
+              ? parseFloat(dashboardResponse.data.insuranceExpectedAmount)
+              : dashboardResponse.data.insuranceExpectedAmount || 0;
 
           setDashboardData({
             paidToday: isNaN(paidToday) ? 0 : paidToday,
-            coverage: isNaN(coverage) ? 0 : coverage,
+            insuranceExpectedAmount: isNaN(insuranceExpectedAmount) ? 0 : insuranceExpectedAmount,
             transactionCount: dashboardResponse.data.patients || 0,
           });
         }
@@ -164,14 +164,14 @@ const Dashboard = () => {
           typeof dashboardResponse.data.paidToday === "string"
             ? parseFloat(dashboardResponse.data.paidToday)
             : dashboardResponse.data.paidToday || 0;
-        const coverage =
-          typeof dashboardResponse.data.coverage === "string"
-            ? parseFloat(dashboardResponse.data.coverage)
-            : dashboardResponse.data.coverage || 0;
+        const insuranceExpectedAmount =
+          typeof dashboardResponse.data.insuranceExpectedAmount === "string"
+            ? parseFloat(dashboardResponse.data.insuranceExpectedAmount)
+            : dashboardResponse.data.insuranceExpectedAmount || 0;
 
         setDashboardData({
           paidToday: isNaN(paidToday) ? 0 : paidToday,
-          coverage: isNaN(coverage) ? 0 : coverage,
+          insuranceExpectedAmount: isNaN(insuranceExpectedAmount) ? 0 : insuranceExpectedAmount,
           transactionCount: dashboardResponse.data.patients || 0,
         });
       }
@@ -359,7 +359,7 @@ const Dashboard = () => {
       value: isLoadingStats
         ? "..."
         : dashboardData
-          ? formatRWF(dashboardData.coverage)
+          ? formatRWF(dashboardData.insuranceExpectedAmount)
           : formatRWF(0),
       subtitle: "Today's coverage",
       icon: InsuranceIcon,
@@ -540,7 +540,7 @@ const Dashboard = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900">
-                                {formatRWF(transaction.amount || 0)}
+                                {formatRWF(transaction.patientPaidAmount || 0)}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">

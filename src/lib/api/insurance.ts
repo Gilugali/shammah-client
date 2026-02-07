@@ -63,8 +63,8 @@ export interface GetInsurancePaymentsResponse {
     month: string;
     monthDisplay: string;
     peopleReceived: number;
-    expectedAmount: number;
-    actualPaidAmount: number;
+    expectedInsuranceAmount: number;
+    actualInsurancePaidAmount: number;
     difference: number;
   }>;
 }

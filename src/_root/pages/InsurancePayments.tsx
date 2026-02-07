@@ -77,171 +77,170 @@ const InsurancePayments = () => {
 
   // Fetch and process payment records
   const fetchPaymentRecords = useCallback(async () => {
-      try {
-        setIsLoading(true);
+    try {
+      setIsLoading(true);
 
-        // Use the new API endpoint with month/year range
-        const params: any = {
-          fromMonth,
-          fromYear,
-          toMonth,
-          toYear,
-        };
+      // Use the new API endpoint with month/year range
+      const params: any = {
+        fromMonth,
+        fromYear,
+        toMonth,
+        toYear,
+      };
 
-        if (selectedInsurance !== "all") {
-          params.insuranceId = selectedInsurance;
-        }
+      if (selectedInsurance !== "all") {
+        params.insuranceId = selectedInsurance;
+      }
 
-        // Call the new insurance payments endpoint
-        const response = await insuranceApi.getPayments(
-          params.fromYear,
-          params.fromMonth,
-          params.toYear,
-          params.toMonth,
-          params.insuranceId,
-        );
+      // Call the new insurance payments endpoint
+      const response = await insuranceApi.getPayments(
+        params.fromYear,
+        params.fromMonth,
+        params.toYear,
+        params.toMonth,
+        params.insuranceId,
+      );
 
-        if (response.success && response.data) {
-          // Transform API response to match our interface
-          let records: InsurancePaymentRecord[] = response.data.map((item) => ({
-            insuranceId: item.insuranceId,
-            insuranceName: item.insuranceName,
-            month: item.month,
-            monthDisplay: item.monthDisplay,
-            peopleReceived: item.peopleReceived,
-            expectedAmount: item.expectedAmount,
-            actualPaidAmount: item.actualPaidAmount,
-          }));
-
-          // Filter by selected insurance if not "all"
-          if (selectedInsurance !== "all") {
-            records = records.filter(
-              (record) => record.insuranceId === selectedInsurance,
-            );
-            // Exclude current month when insurance is selected
-            const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-            records = records.filter(
-              (record) => record.month !== currentMonthKey,
-            );
-          }
-
-          // Filter by date range (fromMonth/fromYear to toMonth/toYear)
-          const fromMonthKey = `${fromYear}-${String(fromMonth).padStart(2, "0")}`;
-          const toMonthKey = `${toYear}-${String(toMonth).padStart(2, "0")}`;
-          records = records.filter((record) => {
-            return record.month >= fromMonthKey && record.month <= toMonthKey;
-          });
-
-          setPaymentRecords(records);
-          setIsLoading(false);
-          return;
-        }
-
-        // Fallback to old method if API not ready
-        const fromBounds = getMonthBounds(fromYear, fromMonth);
-        const toBounds = getMonthBounds(toYear, toMonth);
-        const start = fromBounds.start;
-        const end = toBounds.end;
-
-        const fallbackResponse = await transactionApi.getMonthlyReport(
-          start,
-          end,
-        );
-        const transactions = fallbackResponse.data || [];
-
-        // Group transactions by insurance and month
-        const recordsMap = new Map<string, InsurancePaymentRecord>();
-
-        transactions.forEach((transaction) => {
-          if (!transaction.insuranceId) return;
-
-          const transactionDate = new Date(transaction.createdAt);
-          const transactionYear = transactionDate.getFullYear();
-          const transactionMonth = transactionDate.getMonth() + 1;
-          const monthKey = `${transactionYear}-${String(transactionMonth).padStart(2, "0")}`;
-          const recordKey = `${transaction.insuranceId}-${monthKey}`;
-
-          if (!recordsMap.has(recordKey)) {
-            // Find insurance name
-            const insurance = insurances.find(
-              (ins) => ins.id === transaction.insuranceId,
-            );
-            const insuranceName = insurance?.name || "Unknown Insurance";
-
-            recordsMap.set(recordKey, {
-              insuranceId: transaction.insuranceId,
-              insuranceName,
-              month: monthKey,
-              monthDisplay: `${monthNames[transactionMonth - 1]} ${transactionYear}`,
-              peopleReceived: 0,
-              expectedAmount: 0,
-              actualPaidAmount: 0,
-            });
-          }
-
-          const record = recordsMap.get(recordKey)!;
-          record.peopleReceived += 1;
-          record.expectedAmount += Number(transaction.coverage) || 0;
-        });
-
-        // Convert map to array and calculate actualPaidAmount from transactions
-        const records = Array.from(recordsMap.values());
-
-        // Calculate actualPaidAmount from transaction actualPaid values
-        records.forEach((record) => {
-          const monthTransactions = transactions.filter((t) => {
-            if (!t.insuranceId || t.insuranceId !== record.insuranceId)
-              return false;
-            const tDate = new Date(t.createdAt);
-            const tYear = tDate.getFullYear();
-            const tMonth = tDate.getMonth() + 1;
-            const tMonthKey = `${tYear}-${String(tMonth).padStart(2, "0")}`;
-            return tMonthKey === record.month;
-          });
-
-          record.actualPaidAmount = monthTransactions.reduce(
-            (sum, t) => sum + (Number(t.actualPaid) || 0),
-            0,
-          );
-        });
+      if (response.success && response.data) {
+        // Transform API response to match our interface
+        let records: InsurancePaymentRecord[] = response.data.map((item) => ({
+          insuranceId: item.insuranceId,
+          insuranceName: item.insuranceName,
+          month: item.month,
+          monthDisplay: item.monthDisplay,
+          peopleReceived: item.peopleReceived,
+          expectedAmount: item.expectedInsuranceAmount,
+          actualPaidAmount: item.actualInsurancePaidAmount,
+        }));
 
         // Filter by selected insurance if not "all"
-        let filteredRecords = records;
+        // Note: Backend already filters by insuranceId, so this is redundant but kept for safety
         if (selectedInsurance !== "all") {
-          filteredRecords = records.filter(
+          records = records.filter(
             (record) => record.insuranceId === selectedInsurance,
-          );
-          // Exclude current month when insurance is selected
-          const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-          filteredRecords = filteredRecords.filter(
-            (record) => record.month !== currentMonthKey,
           );
         }
 
         // Filter by date range (fromMonth/fromYear to toMonth/toYear)
         const fromMonthKey = `${fromYear}-${String(fromMonth).padStart(2, "0")}`;
         const toMonthKey = `${toYear}-${String(toMonth).padStart(2, "0")}`;
-        filteredRecords = filteredRecords.filter((record) => {
+        records = records.filter((record) => {
           return record.month >= fromMonthKey && record.month <= toMonthKey;
         });
 
-        // Sort by month (newest first), then by insurance name
-        filteredRecords.sort((a, b) => {
-          if (a.month !== b.month) {
-            return b.month.localeCompare(a.month);
-          }
-          return a.insuranceName.localeCompare(b.insuranceName);
+        setPaymentRecords(records);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback to old method if API not ready
+      const fromBounds = getMonthBounds(fromYear, fromMonth);
+      const toBounds = getMonthBounds(toYear, toMonth);
+      const start = fromBounds.start;
+      const end = toBounds.end;
+
+      const fallbackResponse = await transactionApi.getMonthlyReport(
+        start,
+        end,
+      );
+      const transactions = fallbackResponse.data || [];
+
+      // Group transactions by insurance and month
+      const recordsMap = new Map<string, InsurancePaymentRecord>();
+
+      transactions.forEach((transaction) => {
+        if (!transaction.insuranceId) return;
+
+        const transactionDate = new Date(transaction.createdAt);
+        const transactionYear = transactionDate.getFullYear();
+        const transactionMonth = transactionDate.getMonth() + 1;
+        const monthKey = `${transactionYear}-${String(transactionMonth).padStart(2, "0")}`;
+        const recordKey = `${transaction.insuranceId}-${monthKey}`;
+
+        if (!recordsMap.has(recordKey)) {
+          // Find insurance name
+          const insurance = insurances.find(
+            (ins) => ins.id === transaction.insuranceId,
+          );
+          const insuranceName = insurance?.name || "Unknown Insurance";
+
+          recordsMap.set(recordKey, {
+            insuranceId: transaction.insuranceId,
+            insuranceName,
+            month: monthKey,
+            monthDisplay: `${monthNames[transactionMonth - 1]} ${transactionYear}`,
+            peopleReceived: 0,
+            expectedAmount: 0,
+            actualPaidAmount: 0,
+          });
+        }
+
+        const record = recordsMap.get(recordKey)!;
+        record.peopleReceived += 1;
+        record.expectedAmount += Number(transaction.insuranceExpectedAmount) || 0;
+      });
+
+      // Convert map to array and calculate actualPaidAmount from transactions
+      const records = Array.from(recordsMap.values());
+
+      // Calculate actualPaidAmount from transaction actualPaid values
+      records.forEach((record) => {
+        const monthTransactions = transactions.filter((t) => {
+          if (!t.insuranceId || t.insuranceId !== record.insuranceId)
+            return false;
+          const tDate = new Date(t.createdAt);
+          const tYear = tDate.getFullYear();
+          const tMonth = tDate.getMonth() + 1;
+          const tMonthKey = `${tYear}-${String(tMonth).padStart(2, "0")}`;
+          return tMonthKey === record.month;
         });
 
-        setPaymentRecords(filteredRecords);
-      } catch (error) {
-        toast.error("Failed to load payment records");
-        console.error(error);
-        setPaymentRecords([]);
-      } finally {
-        setIsLoading(false);
+        record.actualPaidAmount = monthTransactions.reduce(
+          (sum, t) => sum + (Number(t.insurancePaidAmount) || 0),
+          0,
+        );
+      });
+
+      // Filter by selected insurance if not "all"
+      let filteredRecords = records;
+      if (selectedInsurance !== "all") {
+        filteredRecords = records.filter(
+          (record) => record.insuranceId === selectedInsurance,
+        );
       }
-    }, [insurances, fromMonth, fromYear, toMonth, toYear, selectedInsurance, now]);
+
+      // Filter by date range (fromMonth/fromYear to toMonth/toYear)
+      const fromMonthKey = `${fromYear}-${String(fromMonth).padStart(2, "0")}`;
+      const toMonthKey = `${toYear}-${String(toMonth).padStart(2, "0")}`;
+      filteredRecords = filteredRecords.filter((record) => {
+        return record.month >= fromMonthKey && record.month <= toMonthKey;
+      });
+
+      // Sort by month (newest first), then by insurance name
+      filteredRecords.sort((a, b) => {
+        if (a.month !== b.month) {
+          return b.month.localeCompare(a.month);
+        }
+        return a.insuranceName.localeCompare(b.insuranceName);
+      });
+
+      setPaymentRecords(filteredRecords);
+    } catch (error) {
+      toast.error("Failed to load payment records");
+      console.error(error);
+      setPaymentRecords([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    insurances,
+    fromMonth,
+    fromYear,
+    toMonth,
+    toYear,
+    selectedInsurance,
+    now,
+  ]);
 
   useEffect(() => {
     if (insurances.length > 0) {
@@ -276,9 +275,10 @@ const InsurancePayments = () => {
   );
   // Calculate total difference by summing individual differences from each record
   const totalDifference = filteredRecords.reduce((sum, record) => {
-    const recordDifference = record.actualPaidAmount === 0
-      ? 0
-      : record.expectedAmount - record.actualPaidAmount;
+    const recordDifference =
+      record.actualPaidAmount === 0
+        ? 0
+        : record.expectedAmount - record.actualPaidAmount;
     return sum + recordDifference;
   }, 0);
 
@@ -495,9 +495,10 @@ const InsurancePayments = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedRecords.map((record, index) => {
                     // If actualPaidAmount is 0, difference should be 0
-                    const difference = record.actualPaidAmount === 0
-                      ? 0
-                      : record.expectedAmount - record.actualPaidAmount;
+                    const difference =
+                      record.actualPaidAmount === 0
+                        ? 0
+                        : record.expectedAmount - record.actualPaidAmount;
                     const isUnderpaid = difference > 0; // Expected more than received
                     const isOverpaid = difference < 0; // Received more than expected
                     return (
@@ -611,7 +612,8 @@ const InsurancePayments = () => {
                               : "text-gray-600"
                         }`}
                       >
-                        {totalDifference !== 0 && (totalDifference < 0 ? "+" : "")}
+                        {totalDifference !== 0 &&
+                          (totalDifference < 0 ? "+" : "")}
                         {formatRWF(Math.abs(totalDifference))}
                       </div>
                     </td>

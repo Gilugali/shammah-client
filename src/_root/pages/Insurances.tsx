@@ -64,7 +64,7 @@ const Insurances = () => {
       const byInsurance: Record<string, number> = {};
       data.forEach((t) => {
         if (!t.insuranceId) return;
-        const cov = Number(t.coverage) || 0;
+        const cov = Number(t.insuranceExpectedAmount) || 0;
         byInsurance[t.insuranceId] = (byInsurance[t.insuranceId] ?? 0) + cov;
       });
       setOwedByInsurance(byInsurance);

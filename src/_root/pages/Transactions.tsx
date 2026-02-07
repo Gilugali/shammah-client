@@ -122,6 +122,13 @@ const Transactions = () => {
       });
     }
 
+    // Sort by createdAt in descending order (newest first)
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+
     return filtered;
   }, [
     allTransactions,
@@ -330,17 +337,17 @@ const Transactions = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {formatRWF(transaction.amount)}
+                        {formatRWF(transaction.patientPaidAmount)}
                       </div>
-                      {transaction.coverage > 0 && (
+                      {transaction.insuranceExpectedAmount > 0 && (
                         <div className="text-xs text-gray-500">
-                          Coverage: {formatRWF(transaction.coverage)}
+                          Coverage: {formatRWF(transaction.insuranceExpectedAmount)}
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        Total: {formatRWF(transaction.totalPayable)}
+                        Total: {formatRWF(transaction.totalBilledAmount)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -166,13 +166,19 @@ const TransactionModal = ({
     try {
       // For 100% insurance coverage, patientPaid should be the total amount (what insurance pays)
       // Backend will handle: if patientPaid = totalAmount, then patient actually pays 0
+      const amount = parseFloat(formData.patientPaid);
       const requestData: CreateTransactionRequest = {
         patientId: formData.patientId,
-        patientPaid: parseFloat(formData.patientPaid),
+        patientPaid: amount,
         // For 100% insurance, use payment method NONE to indicate no direct patient payment
         paymentMethod: isFullInsuranceCoverage ? (formData.paymentMethod || "NONE") : formData.paymentMethod,
         description: formData.description || undefined,
       };
+
+      // If insurance is "private", set actualPaid to the amount
+      if (selectedPatientInsurance?.name?.toLowerCase() === "private") {
+        requestData.actualPaid = amount;
+      }
 
       await transactionApi.create(requestData);
       toast.success("Transaction created successfully");

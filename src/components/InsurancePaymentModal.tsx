@@ -131,9 +131,9 @@ const InsurancePaymentModal = ({
         return;
       }
       
-      // Calculate total expected (sum of coverage)
+      // Calculate total expected (sum of insuranceExpectedAmount)
       const totalExpected = insuranceTransactions.reduce(
-        (sum, t) => sum + (Number(t.coverage) || 0),
+        (sum, t) => sum + (Number(t.insuranceExpectedAmount) || 0),
         0
       );
       
@@ -142,7 +142,7 @@ const InsurancePaymentModal = ({
       
       // Update each transaction proportionally
       const updatePromises = insuranceTransactions.map((transaction) => {
-        const transactionActualPaid = (Number(transaction.coverage) || 0) * ratio;
+        const transactionActualPaid = (Number(transaction.insuranceExpectedAmount) || 0) * ratio;
         return transactionApi.updateActualPaid(transaction.id, transactionActualPaid);
       });
       

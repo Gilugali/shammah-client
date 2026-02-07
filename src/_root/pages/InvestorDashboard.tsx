@@ -49,7 +49,7 @@ const InvestorDashboard = () => {
   const now = new Date();
   const [dashboardData, setDashboardData] = useState<{
     paidToday: number;
-    coverage: number;
+    insuranceExpectedAmount: number;
     transactionCount: number;
   } | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -72,14 +72,14 @@ const InvestorDashboard = () => {
             typeof dashboardResponse.data.paidToday === "string"
               ? parseFloat(dashboardResponse.data.paidToday)
               : dashboardResponse.data.paidToday || 0;
-          const coverage =
-            typeof dashboardResponse.data.coverage === "string"
-              ? parseFloat(dashboardResponse.data.coverage)
-              : dashboardResponse.data.coverage || 0;
+          const insuranceExpectedAmount =
+            typeof dashboardResponse.data.insuranceExpectedAmount === "string"
+              ? parseFloat(dashboardResponse.data.insuranceExpectedAmount)
+              : dashboardResponse.data.insuranceExpectedAmount || 0;
 
           setDashboardData({
             paidToday: isNaN(paidToday) ? 0 : paidToday,
-            coverage: isNaN(coverage) ? 0 : coverage,
+            insuranceExpectedAmount: isNaN(insuranceExpectedAmount) ? 0 : insuranceExpectedAmount,
             transactionCount: dashboardResponse.data.patients || 0,
           });
         }
@@ -300,7 +300,7 @@ const InvestorDashboard = () => {
                 {isLoadingStats
                   ? "..."
                   : dashboardData
-                    ? formatRWF(dashboardData.coverage)
+                    ? formatRWF(dashboardData.insuranceExpectedAmount)
                     : formatRWF(0)}
               </p>
               <p className="text-[11px] text-gray-500 mt-1.5">
@@ -425,6 +425,7 @@ const InvestorDashboard = () => {
 };
 
 export default InvestorDashboard;
+
 
 
 

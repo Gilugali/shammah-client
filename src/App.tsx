@@ -12,6 +12,9 @@ import InsurancePayments from "@/_root/pages/InsurancePayments";
 import Expenses from "@/_root/pages/Expenses";
 import Users from "@/_root/pages/Users";
 import InvestorDashboard from "@/_root/pages/InvestorDashboard";
+import FinancialOverview from "@/_root/pages/FinancialOverview";
+import CashIn from "@/_root/pages/CashIn";
+import Reports from "@/_root/pages/Reports";
 import Developer from "@/_root/pages/Developer";
 import { RoleGuard } from "@/components/RoleGuard";
 
@@ -74,7 +77,27 @@ function App() {
                 <RoleGuard
                   allowedRoles={["receptionist", "owner", "admin", "investor"]}
                 >
-                  <div>Reports (Coming Soon)</div>
+                  <Reports />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/financial-overview"
+              element={
+                <RoleGuard
+                  allowedRoles={["admin", "investor", "owner"]}
+                >
+                  <FinancialOverview />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/cash-in"
+              element={
+                <RoleGuard
+                  allowedRoles={["admin", "investor", "owner"]}
+                >
+                  <CashIn />
                 </RoleGuard>
               }
             />
