@@ -1,0 +1,21 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json/ ./
+
+RUN pnpm install
+
+COPY . .
+RUN pnpm run build
+
+
+FROM nginx:alpine
+
+RUN rm /etc/nginx/conf.d/defaul.conf
+
+COPY --from=build /app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ['nginx', "-g", 'daemon off;']
